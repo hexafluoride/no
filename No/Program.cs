@@ -7,6 +7,7 @@ using System.Text;
 using System.Threading.Tasks;
 
 using System.IO;
+using System.Threading;
 
 namespace No
 {
@@ -24,6 +25,9 @@ namespace No
 
         static void Main(string[] args)
         {
+            if (!Directory.Exists(DataPath))
+                Directory.CreateDirectory(DataPath);
+
             while(true)
             {
                 EnumerateActions();
@@ -86,9 +90,44 @@ namespace No
             return new KeyValuePair<string, Action>("", delegate { });
         }
 
+        static void ListPasswords()
+        {
+            foreach(var entry in List.Passwords)
+            {
+                Console.Write("Name: ");
+                SetConsoleColor(ConsoleColor.Green);
+                Console.Write(entry.Name);
+                SetConsoleColor(ConsoleColor.Gray);
+                Console.Write(", password: ");
+                SetConsoleColor(ConsoleColor.Red);
+                Console.WriteLine(entry.Password);
+                SetConsoleColor(ConsoleColor.Gray);
+            }
+
+            for(int i = 5; i > 0; i--)
+            {
+                if(i != 5)
+                    Console.CursorTop--;
+
+                Console.WriteLine("Clearing in {0}...", i);
+                Thread.Sleep(1000);
+            }
+
+            Console.Clear();
+        }
+
         static void GeneratePassword()
         {
             string name = Prompt("Service name");
+
+            while (List.Contains(name))
+            {
+                if (!PromptConfirm("A password with that name already exists. Overwrite?"))
+                    name = Prompt("Service name");
+                else
+                    break;
+            }
+
             string password = List.Generate(name);
 
             Console.Write("Password for ");
@@ -118,7 +157,7 @@ namespace No
         {
             string name = Prompt("Service name");
 
-            if (string.IsNullOrWhiteSpace(List.Retrieve(name)))
+            if (!List.Contains(name))
                 Console.WriteLine("No such service.");
             else
             {
@@ -172,6 +211,7 @@ namespace No
 
                 Actions.Add("Retrieve password", RetrievePassword);
                 Actions.Add("Generate password", GeneratePassword);
+                Actions.Add("List all passwords", ListPasswords);
             }
             catch (Exception ex)
             {
@@ -214,6 +254,26 @@ namespace No
 
             Actions.Add("Retrieve password", RetrievePassword);
             Actions.Add("Generate password", GeneratePassword);
+            Actions.Add("List all passwords", ListPasswords);
+        }
+
+        static bool PromptConfirm(string prompt)
+        {
+            Console.Write("{0} [y/n]", prompt);
+
+            var key = Console.ReadKey(true);
+            Console.WriteLine();
+            string character = key.KeyChar.ToString().ToLower();
+
+            switch(character)
+            {
+                case "y":
+                    return true;
+                case "n":
+                    return false;
+                default:
+                    return PromptConfirm(prompt);
+            }
         }
 
         static string Prompt(string prompt)

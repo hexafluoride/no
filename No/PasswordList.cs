@@ -16,10 +16,20 @@ namespace No
 
         }
 
+        public bool Contains(string name)
+        {
+            return Passwords.Any(p => p.Name == name);
+        }
+
+        public void Remove(string name)
+        {
+            Passwords.RemoveAll(p => p.Name == name);
+        }
+
         public void Add(string name, string password)
         {
-            if (Passwords.Any(p => p.Name == name))
-                throw new Exception("Password with same name already exists");
+            if (Contains(name))
+                Remove(name);
 
             Passwords.Add(new PasswordEntry() { Name = name, Password = password });
         }
