@@ -1,4 +1,6 @@
-﻿using System;
+﻿#define CLIPBOARD // Same, disable with Linux if you encounter issues
+
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -18,6 +20,7 @@ namespace No
 
         public static void SetClipboard(string text)
         {
+#if CLIPBOARD
             Thread thr = new Thread(new ThreadStart(delegate 
             {
                 Clipboard.SetText(text);
@@ -25,6 +28,7 @@ namespace No
 
             thr.SetApartmentState(ApartmentState.STA);
             thr.Start();
+#endif
         }
 
         public static void LogMessage(string message, params object[] format)
