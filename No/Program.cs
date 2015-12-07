@@ -1,4 +1,4 @@
-﻿#define COLOR // Linux might have some color issues, so comment this line if you don't want color.
+﻿//#define COLOR // Linux might have some color issues, so comment this line if you don't want color.
 
 using System;
 using System.Collections.Generic;
@@ -232,6 +232,12 @@ namespace No
 
         static void CreateNewList()
         {
+            if(File.Exists(GetAbsolutePath("list")))
+            {
+                if (!PromptConfirm("You already have a keylist. Overwrite?"))
+                    return;
+            }
+
             string password = DiscretePrompt("Enter password");
             byte[] salt = CryptoBox.GetRandomBytes(16);
 

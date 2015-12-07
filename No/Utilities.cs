@@ -2,6 +2,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Text;
 using System.Threading;
@@ -18,17 +19,41 @@ namespace No
             return "0x" + BitConverter.ToString(data).Replace("-", "").ToLower();
         }
 
+        public static bool IsRunningOnMono()
+        {
+            return Type.GetType("Mono.Runtime") != null;
+        }
+
         public static void SetClipboard(string text)
         {
 #if CLIPBOARD
-            Thread thr = new Thread(new ThreadStart(delegate 
+            if (IsRunningOnMono())
             {
-                Clipboard.SetText(text);
-            }));
+                RunAndPipe("xclip", "", text);
+            }
+            else
+            { 
+                Thread thr = new Thread(new ThreadStart(delegate
+                {
+                    Clipboard.SetText(text);
+                }));
 
-            thr.SetApartmentState(ApartmentState.STA);
-            thr.Start();
+                thr.SetApartmentState(ApartmentState.STA);
+                thr.Start();
+            }
 #endif
+        }
+
+        public static void RunAndPipe(string file, string args, string data)
+        {
+            ProcessStartInfo psi = new ProcessStartInfo(file, args);
+            psi.UseShellExecute = false;
+            psi.RedirectStandardInput = true;
+
+            Process proc = Process.Start(psi);
+            proc.StandardInput.Write(data);
+            proc.StandardInput.Close();
+
         }
 
         public static void LogMessage(string message, params object[] format)
