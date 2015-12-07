@@ -13,7 +13,7 @@ namespace No
 {
     class Program
     {
-        static string DataPath = "./nodata/";
+        static string DataPath = Utilities.GetDataRoot();
         static PasswordList List;
         static Dictionary<string, Action> Actions = new Dictionary<string, Action>()
         {
@@ -26,7 +26,15 @@ namespace No
         static void Main(string[] args)
         {
             if (!Directory.Exists(DataPath))
-                Directory.CreateDirectory(DataPath);
+            {
+                if (Directory.Exists("./nodata/") &&
+                    PromptConfirm(string.Format("It appears that you have a keylist in the old data directory(\"./nodata/\"). Would you like to migrate that to the new data directory({0})?", DataPath)))
+                {
+                    Utilities.ProperMove("./nodata/", DataPath);
+                }
+                else
+                    Directory.CreateDirectory(DataPath);
+            }
 
             while(true)
             {
