@@ -1,4 +1,4 @@
-﻿//#define COLOR // Linux might have some color issues, so comment this line if you don't want color.
+﻿#define COLOR // Linux might have some color issues, so comment this line if you don't want color.
 
 using System;
 using System.Collections.Generic;
