@@ -8,8 +8,8 @@ namespace No
 {
     public class PasswordGenerator
     {
-        public int Length = 32;
-        public Characters Characters = Characters.Letters | Characters.LettersUppercase | Characters.Numbers | Characters.SymbolsBasic;
+        public int Length = 16;
+        public Characters Characters = Characters.Letters | Characters.LettersUppercase | Characters.Numbers;
 
         private string _rangeCache = "";
         private Characters _previousRange = 0;
