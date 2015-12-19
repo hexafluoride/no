@@ -201,7 +201,7 @@ namespace No
                     return;
                 }
 
-                string password = DiscretePrompt("Enter password");
+                string password = DiscreetPrompt("Enter password");
                 byte[] salt = File.ReadAllBytes(GetAbsolutePath("salt"));
 
                 File.WriteAllBytes(GetAbsolutePath("salt"), salt);
@@ -246,7 +246,7 @@ namespace No
                     return;
             }
 
-            string password = DiscretePrompt("Enter password");
+            string password = DiscreetPrompt("Enter password");
             byte[] salt = CryptoBox.GetRandomBytes(16);
 
             File.WriteAllBytes(GetAbsolutePath("salt"), salt);
@@ -296,7 +296,7 @@ namespace No
             return Console.ReadLine();
         }
 
-        static string DiscretePrompt(string prompt)
+        static string DiscreetPrompt(string prompt)
         {
             Console.Write("{0}: ", prompt);
 
