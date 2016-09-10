@@ -1,4 +1,5 @@
-﻿#define CLIPBOARD // Same, disable with Linux if you encounter issues
+﻿#define COLOR // Linux might have some color issues, so comment this line if you don't want color.
+#define CLIPBOARD // Same, disable with Linux if you encounter issues
 
 using System;
 using System.Collections.Generic;
@@ -101,6 +102,77 @@ namespace No
             proc.StandardInput.Close();
 
         }
+
+        /// <summary>
+        /// Prints a color-coded string. Color codes are as follows:
+        /// %0: black
+        /// %7: gray
+        /// %a: green
+        /// %c: red
+        /// %f: white(for emphasis)
+        /// %e: yellow
+        /// </summary>
+        /// <param name="message">The message to print</param>
+        /// <param name="format">List of objects to apply to a formatted string</param>
+        public static void PrintColoredLine(string message, params object[] format)
+        {
+            PrintColored(message, format);
+            Console.WriteLine();
+        }
+
+#if COLOR
+        /// <summary>
+        /// Prints a color-coded string. Color codes are as follows:
+        /// %0: black
+        /// %7: gray
+        /// %a: green
+        /// %c: red
+        /// %f: white(for emphasis)
+        /// %e: yellow
+        /// </summary>
+        /// <param name="message">The message to print</param>
+        /// <param name="format">List of objects to apply to a formatted string</param>
+        public static void PrintColored(string message, params object[] format)
+        {
+            if (!message.Contains('%'))
+            {
+                Console.WriteLine(message, format);
+                return;
+            }
+
+            message = string.Format(message, format);
+
+            ConsoleColor[] colors = (ConsoleColor[])Enum.GetValues(typeof(ConsoleColor));
+            string[] fragments = message.Split(new[] { '%' }, StringSplitOptions.RemoveEmptyEntries);
+
+            foreach (string str in fragments)
+            {
+                string fragment = str.Substring(1);
+                string color_code = str[0].ToString();
+
+                try
+                {
+                    int color = Convert.ToInt32(color_code, 16);
+                    Console.ForegroundColor = colors[color];
+                }
+                catch
+                {
+                    fragment = str;
+                }
+
+                Console.Write(fragment);
+            }
+
+            Console.ForegroundColor = ConsoleColor.Gray;
+        }
+#endif
+
+#if !COLOR
+        public static void PrintColored(string message, params object[] format)
+        {
+            Console.WriteLine(message, format);
+        }
+#endif
 
         public static void LogMessage(string message, params object[] format)
         {

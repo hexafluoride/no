@@ -46,11 +46,22 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="CryptoBox.cs" />
+    <Compile Include="UI\ColorInfo.cs" />
+    <Compile Include="UI\Controls\Control.cs" />
+    <Compile Include="UI\Controls\Label.cs" />
+    <Compile Include="UI\Controls\ProgressBar.cs" />
+    <Compile Include="UI\Point.cs" />
+    <Compile Include="UI\Rectangle.cs" />
+    <Compile Include="UI\Renderer.cs" />
     <Compile Include="PasswordGenerator.cs" />
     <Compile Include="PasswordList.cs" />
     <Compile Include="PasswordEntry.cs" />
+    <Compile Include="UI\PasswordListRenderer.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="UI\Size.cs" />
+    <Compile Include="UI\TextBuffer.cs" />
+    <Compile Include="UI\Utilities.cs" />
     <Compile Include="Utilities.cs" />
   </ItemGroup>
   <ItemGroup>

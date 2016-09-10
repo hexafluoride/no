@@ -1,6 +1,4 @@
-﻿#define COLOR // Linux might have some color issues, so comment this line if you don't want color.
-
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -9,10 +7,14 @@ using System.Threading.Tasks;
 using System.IO;
 using System.Threading;
 
+using No.UI;
+using No.UI.Controls;
+
 namespace No
 {
     class Program
     {
+        static int AutoClearDelay = 10000;
         static string DataPath = Utilities.GetDataRoot();
         static PasswordList List;
         static Dictionary<string, Action> Actions = new Dictionary<string, Action>()
@@ -20,6 +22,8 @@ namespace No
             { "Create a keylist", CreateNewList },
             { "Unlock keylist", UnlockList }
         };
+
+        static ManualResetEvent ActionTrigger = new ManualResetEvent(false);
 
         static byte[] Key;
 
@@ -54,6 +58,44 @@ namespace No
             }
         }
 
+        static void AfterUnlock()
+        {
+            Actions.Clear();
+
+            Actions.Add("Retrieve password", RetrievePassword);
+            Actions.Add("Generate password", GeneratePassword);
+            Actions.Add("List all passwords", ListPasswords);
+            Actions.Add("Add password", AddPassword);
+        }
+
+        static void AddPassword()
+        {
+            string name = Prompt("Enter a service name");
+
+            while (List.Contains(name))
+            {
+                if (!PromptConfirm("A password with that name already exists. Overwrite?"))
+                    name = Prompt("Enter a service name");
+                else
+                    break;
+            }
+
+            string password = "";
+
+            while (true)
+            {
+                password = DiscreetPrompt("Password");
+                if (DiscreetPrompt("Confirm password") != password)
+                    Console.WriteLine("Confirmation doesn't match password. Try again.");
+                else
+                    break;
+            }
+
+            List.Add(name, password);
+
+            Utilities.PrintColoredLine("Added password for %a{0}%7.", name);
+        }
+
         static void InvokeAction()
         {
             string str = Console.ReadKey(true).KeyChar.ToString();
@@ -65,15 +107,12 @@ namespace No
             if (selection < 1 || selection > Actions.Count)
                 return;
 
+            ActionTrigger.Set();
             Console.Clear();
 
             var pair = GetAction(selection);
-
-            Console.Write("Selected ");
-            SetConsoleColor(ConsoleColor.White);
-            Console.Write(pair.Key);
-            SetConsoleColor(ConsoleColor.Gray);
-            Console.WriteLine(".");
+            
+            Utilities.PrintColoredLine("Selected %f{0}%7.", pair.Key);
 
             try
             {
@@ -102,14 +141,7 @@ namespace No
         {
             foreach(var entry in List.Passwords)
             {
-                Console.Write("Name: ");
-                SetConsoleColor(ConsoleColor.Green);
-                Console.Write(entry.Name);
-                SetConsoleColor(ConsoleColor.Gray);
-                Console.Write(", password: ");
-                SetConsoleColor(ConsoleColor.Red);
-                Console.WriteLine(entry.Password);
-                SetConsoleColor(ConsoleColor.Gray);
+                Utilities.PrintColoredLine("Name: %a{0}%7, password: %c{1}", entry.Name, entry.Password);
             }
 
             for(int i = 5; i > 0; i--)
@@ -136,29 +168,64 @@ namespace No
                     break;
             }
 
-            string password = List.Generate(name);
+            string len = Prompt("Password length", "16");
+            string chars = Prompt("Characters to use", "lusd");
 
-            Console.Write("Password for ");
-            SetConsoleColor(ConsoleColor.Green);
-            Console.Write(name);
-            SetConsoleColor(ConsoleColor.Gray);
-            Console.Write(" is ");
-            SetConsoleColor(ConsoleColor.Red);
-            Console.Write(password);
-            SetConsoleColor(ConsoleColor.Gray);
-            Console.WriteLine(".");
+            Dictionary<char, Characters> mappings = new Dictionary<char, Characters>()
+            {
+                {'l', Characters.Letters },
+                {'u', Characters.LettersUppercase },
+                {'s', Characters.SymbolsBasic },
+                {'d', Characters.Numbers },
+                {'a', Characters.SymbolsAdvanced }
+            };
+
+            int length = int.Parse(len);
+            Characters c = (Characters)0;
+
+            foreach (var pair in mappings)
+                if (chars.Contains(pair.Key))
+                    c |= pair.Value;
+
+            string password = List.Generate(name, new PasswordGenerator() { Characters = c, Length = length });
+
+            Utilities.PrintColored("Password for %a{0}%7 is ", name);
+
+            int pass_x = Console.CursorLeft;
+            int pass_y = Console.CursorTop;
+
+            Utilities.PrintColoredLine("%c{0}%7.", password);
 
             Utilities.SetClipboard(password);
             Console.WriteLine("Copied password to clipboard.");
 
-            Save();
-        }
+            Console.Write("Auto-clearing in {0} seconds...", AutoClearDelay / 1000);
 
-        static void SetConsoleColor(ConsoleColor color)
-        {
-#if COLOR
-            Console.ForegroundColor = color;
-#endif
+            int progress_x = Console.CursorLeft;
+            int progress_y = Console.CursorTop;
+
+            Console.WriteLine();
+
+            Task.Factory.StartNew(
+                delegate {
+                    ActionTrigger.Reset();
+
+                    bool result = ActionTrigger.WaitOne(AutoClearDelay);
+
+                    if (!result)
+                    {
+                        int temp_x = Console.CursorLeft;
+                        int temp_y = Console.CursorTop;
+
+                        Console.SetCursorPosition(pass_x, pass_y);
+                        Utilities.PrintColored("%c" + new string('█', length) + "%7");
+                        Console.SetCursorPosition(progress_x, progress_y);
+                        Console.Write("cleared.");
+                        Console.SetCursorPosition(temp_x, temp_y);
+                    }
+                });
+
+            Save();
         }
 
         static void RetrievePassword()
@@ -170,19 +237,41 @@ namespace No
             else
             {
                 string password = List.Retrieve(name);
+                Utilities.PrintColored("Password for %a{0}%7 is ", name);
 
-                Console.Write("Password for ");
-                SetConsoleColor(ConsoleColor.Green);
-                Console.Write(name);
-                SetConsoleColor(ConsoleColor.Gray);
-                Console.Write(" is ");
-                SetConsoleColor(ConsoleColor.Red);
-                Console.Write(password);
-                SetConsoleColor(ConsoleColor.Gray);
-                Console.WriteLine(".");
+                int pass_x = Console.CursorLeft;
+                int pass_y = Console.CursorTop;
+
+                Utilities.PrintColoredLine("%c{0}%7.", password);
 
                 Utilities.SetClipboard(password);
                 Console.WriteLine("Copied password to clipboard.");
+
+                Console.Write("Auto-clearing in {0} seconds...", AutoClearDelay / 1000);
+
+                int progress_x = Console.CursorLeft;
+                int progress_y = Console.CursorTop;
+
+                Console.WriteLine();
+
+                Task.Factory.StartNew(
+                    delegate {
+                        ActionTrigger.Reset();
+
+                        bool result = ActionTrigger.WaitOne(AutoClearDelay);
+
+                        if (!result)
+                        {
+                            int temp_x = Console.CursorLeft;
+                            int temp_y = Console.CursorTop;
+
+                            Console.SetCursorPosition(pass_x, pass_y);
+                            Utilities.PrintColored("%c" + new string('█', password.Length) + "%7");
+                            Console.SetCursorPosition(progress_x, progress_y);
+                            Console.Write("cleared.");
+                            Console.SetCursorPosition(temp_x, temp_y);
+                        }
+                    });
             }
         }
 
@@ -215,11 +304,7 @@ namespace No
                 List = CryptoBox.SafeDeserialize<PasswordList>(key, GetAbsolutePath("list"));
                 Console.WriteLine("done.");
 
-                Actions.Clear();
-
-                Actions.Add("Retrieve password", RetrievePassword);
-                Actions.Add("Generate password", GeneratePassword);
-                Actions.Add("List all passwords", ListPasswords);
+                AfterUnlock();
             }
             catch (Exception ex)
             {
@@ -264,11 +349,7 @@ namespace No
 
             Console.WriteLine("Created new encrypted keylist.");
 
-            Actions.Clear();
-
-            Actions.Add("Retrieve password", RetrievePassword);
-            Actions.Add("Generate password", GeneratePassword);
-            Actions.Add("List all passwords", ListPasswords);
+            AfterUnlock();
         }
 
         static bool PromptConfirm(string prompt)
@@ -290,10 +371,16 @@ namespace No
             }
         }
 
-        static string Prompt(string prompt)
+        static string Prompt(string prompt, string def = "")
         {
-            Console.Write("{0}: ", prompt);
-            return Console.ReadLine();
+            Console.Write("{0}{1}: ", prompt, def != "" ? " [" + def + "]" : "");
+
+            string line = Console.ReadLine();
+
+            if (line == "" && def != "")
+                return def;
+
+            return line;
         }
 
         static string DiscreetPrompt(string prompt)

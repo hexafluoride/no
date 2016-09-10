@@ -9,7 +9,7 @@ namespace No
     public class PasswordGenerator
     {
         public int Length = 16;
-        public Characters Characters = Characters.Letters | Characters.LettersUppercase | Characters.Numbers;
+        public Characters Characters = Characters.Letters | Characters.LettersUppercase | Characters.Numbers | Characters.SymbolsBasic;
 
         private string _rangeCache = "";
         private Characters _previousRange = 0;
